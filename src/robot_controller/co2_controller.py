@@ -24,6 +24,9 @@ class co2_handler:
             if self.ser.isOpen() is False:
                 self.ser.open()
 
+            logging.info("Response from pH probe: " + self.get_data())
+            logging.info("Response from pH probe: " + self.get_data())
+
             if self.get_data() == "CO2 Kit Ready":
                 logging.info("Serial connection to CO2 kit established.")
             else:

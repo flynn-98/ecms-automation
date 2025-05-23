@@ -27,7 +27,9 @@ const int SERVO_PIN = 10;
 const byte RELAY_PIN = A0;
 
 const byte PH_PIN = A1;
-const byte ANALOG_2 = A2;
+
+const int MOSFET_1 = 11;
+const int MOSFET_2 = 12;
 
 // Parameters for Valve (Servo)
 const int servoClosed = 0;
@@ -75,6 +77,8 @@ long volToSteps(float vol);
 void closeValve();
 void openValve();
 
+void dcMotor1(unsigned long duration);
+void dcMotor2(unsigned long duration);
 void releaseCO2(unsigned long duration);
 void addChemical(float vol);
 void addWater(float vol);
@@ -113,8 +117,11 @@ void setup() {
 
   pinMode(RELAY_PIN, OUTPUT);
 
+  pinMode(MOSFET_1, OUTPUT);
+  pinMode(MOSFET_2, OUTPUT);
+
   Serial.begin(9600);
-  //ph.begin();
+  ph.begin();
 
   valve.write(servoClosed);
   
@@ -142,6 +149,20 @@ void loop() {
             
             // Call action using received variables
             releaseCO2(duration);
+        }
+        else if (action == "dcMotor1") {
+            // Extract variables spaced by commas, then last variable up to closed bracket
+            duration = Serial.readStringUntil(')').toInt();
+            
+            // Call action using received variables
+            dcMotor1(duration);
+        }
+        else if (action == "dcMotor2") {
+            // Extract variables spaced by commas, then last variable up to closed bracket
+            duration = Serial.readStringUntil(')').toInt();
+            
+            // Call action using received variables
+            dcMotor2(duration);
         }
         else if (action == "addChemical") {
             volume = Serial.readStringUntil(')').toFloat();
@@ -182,6 +203,26 @@ void relayOn() {
 void relayOff() {
     digitalWrite(RELAY_PIN, LOW);
 };
+
+void dcMotor1(unsigned long duration) {
+    relayOn();
+    digitalWrite(MOSFET_1, HIGH);
+    delay(floor(duration * 1000)); // Convert seconds to milliseconds
+    digitalWrite(MOSFET_1, LOW);
+    relayOff();
+
+    Serial.println("DC Motor 1 turned on for " + String(duration) + "s");
+}
+
+void dcMotor2(unsigned long duration) {
+    relayOn();
+    digitalWrite(MOSFET_2, HIGH);
+    delay(floor(duration * 1000)); // Convert seconds to milliseconds
+    digitalWrite(MOSFET_2, LOW);
+    relayOff();
+
+    Serial.println("DC Motor 2 turned on for " + String(duration) + "s");
+}
 
 // put function definitions here:
 void closeValve() {
