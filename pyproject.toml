@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ecms-automation"
+authors = [
+    {name = "Flynn Marshall", email = "flyma@dtu.dk"}
+]
+
+description = "Python package to run electroyte mixing experiments using the mixing station, which utilises a disc pump for aspirating and dispensing operations."
+version = "1.0.0"
+readme = "README.md"
+requires-python = ">=3.8,<3.11"
+dependencies = [
+    "requests > 2.26.0",
+    "pandas",
+    "numpy < 2",
+    "pyserial",
+    "ipython",
+    "datetime",
+    "matplotlib",
+]
+
+[project.optional-dependencies]
+lint = [
+    "ruff",
+    "mypy",
+]
+
+[project.urls]
+repository = "https://github.com/flynn-98/ecms-automation.git"
+
+[project.scripts]
+
+[tool.ruff]
+line-length = 250
+indent-width = 4
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+[tool.ruff.lint]
+select = [
+    "F",   # pyflakes
+    "E",   # pycodestyle
+    "I",   # isort
+    "ANN", # flake8 type annotations
+    "RUF", # ruff-specific rules
+]
+fixable = ["ALL"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+disallow_untyped_defs = true
