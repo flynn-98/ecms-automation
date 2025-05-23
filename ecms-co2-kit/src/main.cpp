@@ -46,7 +46,7 @@ const float ECMS_SPEED = 300.0 * MICROSTEPS * GEAR_RATIO; //microsteps/s
 const float MAX_ACCEL = 200.0 * MICROSTEPS * GEAR_RATIO; //microsteps/s2
 
 // For Pump stepper motor
-const float ML_REV = 0.1; //ml/revs
+const float ML_REV = 0.0855; //ml/revs
 
 float voltage;
 float phValue; 
@@ -81,6 +81,7 @@ void dcMotor1(unsigned long duration);
 void dcMotor2(unsigned long duration);
 void releaseCO2(unsigned long duration);
 void addChemical(float vol);
+void sendToPH(float vol);
 void addWater(float vol);
 void transferToECMS(float vol);
 float getPH();
@@ -107,10 +108,10 @@ void setup() {
   PUMP_2.setMaxSpeed(PUMP_SPEED);
 
   PUMP_3.setAcceleration(MAX_ACCEL);
-  PUMP_3.setMaxSpeed(PUMP_SPEED);
+  PUMP_3.setMaxSpeed(ECMS_SPEED);
 
   PUMP_4.setAcceleration(MAX_ACCEL);
-  PUMP_4.setMaxSpeed(ECMS_SPEED);
+  PUMP_4.setMaxSpeed(PUMP_SPEED);
 
   pinMode(SERVO_PIN, OUTPUT);
   valve.attach(SERVO_PIN);
@@ -168,6 +169,11 @@ void loop() {
             volume = Serial.readStringUntil(')').toFloat();
             
             addChemical(volume);
+        }
+        else if (action == "sendToPH") {
+            volume = Serial.readStringUntil(')').toFloat();
+            
+            sendToPH(volume);
         }
         else if (action == "addWater") {
             volume = Serial.readStringUntil(')').toFloat();
@@ -255,6 +261,20 @@ void addChemical(float vol) {
     relayOff();
 };
 
+void sendToPH(float vol) {
+    relayOn();
+
+    // No limits for Pump
+    PUMP_4.move(volToSteps(vol));
+
+    // Run until complete
+    PUMP_4.runToPosition();
+
+    // Report back to PC
+    Serial.println("Pumping complete");
+    relayOff();
+};
+
 void addWater(float vol) {
     relayOn();
 
@@ -285,8 +305,8 @@ void transferToECMS(float vol) {
 
 float getPH() {
     voltage = analogRead(PH_PIN);
-    voltage = voltage * (3300 / 1023.0); // Convert to voltage
+    voltage = voltage * (5000 / 1023.0); // Convert to voltage
     phValue = ph.readPH(voltage, temperature);
 
-    Serial.print(phValue);
-}
+    Serial.println(phValue);
+};

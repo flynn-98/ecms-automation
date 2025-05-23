@@ -1,6 +1,7 @@
 import logging
 import math
 import sys
+import time
 
 import serial
 
@@ -10,6 +11,10 @@ class co2_handler:
     def __init__(self, COM: str, sim: bool = False) -> None:
         self.sim = sim
         self.radius = 1 #mm
+
+        self.pH_threshold = 6.8
+        self.pH_sample_time = 30 #s
+        self.pH_sample_size = 10
 
         if self.sim is False:
             logging.info("Configuring CO2 kit serial port..")
@@ -39,7 +44,7 @@ class co2_handler:
     def get_data(self) -> str:
         while self.ser.in_waiting == 0:
             pass
-
+        
         return self.ser.readline().decode().rstrip().replace("\x00", "")
         
     def get_response(self) -> None:
@@ -64,15 +69,15 @@ class co2_handler:
             self.ser.write(f"releaseCO2({duration*60})".encode())
             self.get_response()
 
-    def sendToPH(self, duration: float = 0) -> None:
-        logging.info(f"Sending to pH chamber via DC motor 1 ({duration}s)..")
+    def refreshWater(self, duration: float = 0) -> None:
+        logging.info(f"Sending to water to pH chamber via DC motor 1 ({duration}s)..")
         
         if self.sim is False:
-            self.ser.write(f"dcMotor1({duration*60})".encode())
+            self.ser.write(f"dcMotor1({duration})".encode())
             self.get_response()
 
     def sendToWaste(self, duration: float = 0) -> None:
-        logging.info(f"Sending to waste via DC motor 2 ({duration}s)..")
+        logging.info(f"Sending to waste from pH chamber via DC motor 2 ({duration}s)..")
         
         if self.sim is False:
             self.ser.write(f"dcMotor2({duration})".encode())
@@ -81,6 +86,15 @@ class co2_handler:
     def getTubeVol(self, tube_length: float) -> float:
         # 2mm ID tubing (Area = Pi)
         return math.pi * tube_length * 1e-3 * self.radius**2 #ml
+    
+    def sendToPH(self, fluid_vol: float = 0, tube_length: float = 0, overpump: float = 1.0) -> None:
+        # Fluid volume in uL -> sent volume in mL
+        logging.info(f"Pumping {fluid_vol}ml of chemical to pH chamber..")
+        vol = overpump * (fluid_vol + self.getTubeVol(tube_length)) #ml
+        
+        if self.sim is False:
+            self.ser.write(f"sendToPH({vol})".encode())
+            self.get_response()
 
     def addChemical(self, fluid_vol: float = 0, tube_length: float = 0, overpump: float = 1.0) -> None:
         # Fluid volume in uL -> sent volume in mL
@@ -108,3 +122,29 @@ class co2_handler:
         if self.sim is False:
             self.ser.write(f"transferToECMS({vol})".encode())
             self.get_response()
+
+    def getPH(self) -> float:
+        if self.sim is False:
+            self.ser.write("getPH()".encode())
+            return float(self.get_data())
+        else:
+            return 0
+
+    def checkPH(self) -> bool:
+        average = 0
+        delay = self.pH_sample_time / self.pH_sample_size
+        logging.info(f"Collecting pH data for {self.pH_sample_time}s..")
+
+        for _ in range(self.pH_sample_size):
+            average += self.getPH()
+            time.sleep(delay)
+
+        average /= self.pH_sample_size
+        logging.info(f"Average pH found to be {average}.")
+
+        if average < self.pH_threshold:
+            logging.info(f"pH test passed!")
+            return True
+        else:
+            logging.info(f"pH test failed!")
+            return False
