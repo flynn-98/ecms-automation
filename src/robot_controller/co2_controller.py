@@ -64,6 +64,20 @@ class co2_handler:
             self.ser.write(f"releaseCO2({duration*60})".encode())
             self.get_response()
 
+    def sendToPH(self, duration: float = 0) -> None:
+        logging.info(f"Sending to pH chamber via DC motor 1 ({duration}s)..")
+        
+        if self.sim is False:
+            self.ser.write(f"dcMotor1({duration*60})".encode())
+            self.get_response()
+
+    def sendToWaste(self, duration: float = 0) -> None:
+        logging.info(f"Sending to waste via DC motor 2 ({duration}s)..")
+        
+        if self.sim is False:
+            self.ser.write(f"dcMotor2({duration})".encode())
+            self.get_response()
+
     def getTubeVol(self, tube_length: float) -> float:
         # 2mm ID tubing (Area = Pi)
         return math.pi * tube_length * 1e-3 * self.radius**2 #ml
