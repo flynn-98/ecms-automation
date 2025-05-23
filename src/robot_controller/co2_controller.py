@@ -16,6 +16,11 @@ class co2_handler:
         self.pH_sample_time = 30 #s
         self.pH_sample_size = 10
 
+        self.pH_volume = 15 #ml
+
+        self.waste_time = 30 #s
+        self.refresh_time = 15 #s
+
         if self.sim is False:
             logging.info("Configuring CO2 kit serial port..")
             self.ser = serial.Serial(COM) 
@@ -69,28 +74,28 @@ class co2_handler:
             self.ser.write(f"releaseCO2({duration*60})".encode())
             self.get_response()
 
-    def refreshWater(self, duration: float = 0) -> None:
-        logging.info(f"Sending to water to pH chamber via DC motor 1 ({duration}s)..")
+    def refreshWater(self) -> None:
+        logging.info(f"Sending to water to pH chamber via DC motor 1 ({self.refresh_time}s)..")
         
         if self.sim is False:
-            self.ser.write(f"dcMotor1({duration})".encode())
+            self.ser.write(f"dcMotor1({self.refresh_time})".encode())
             self.get_response()
 
-    def sendToWaste(self, duration: float = 0) -> None:
-        logging.info(f"Sending to waste from pH chamber via DC motor 2 ({duration}s)..")
+    def sendToWaste(self) -> None:
+        logging.info(f"Sending to waste from pH chamber via DC motor 2 ({self.waste_time}s)..")
         
         if self.sim is False:
-            self.ser.write(f"dcMotor2({duration})".encode())
+            self.ser.write(f"dcMotor2({self.waste_time})".encode())
             self.get_response()
 
     def getTubeVol(self, tube_length: float) -> float:
         # 2mm ID tubing (Area = Pi)
         return math.pi * tube_length * 1e-3 * self.radius**2 #ml
     
-    def sendToPH(self, fluid_vol: float = 0, tube_length: float = 0, overpump: float = 1.0) -> None:
+    def sendToPH(self, tube_length: float = 0, overpump: float = 1.0) -> None:
         # Fluid volume in uL -> sent volume in mL
-        logging.info(f"Pumping {fluid_vol}ml of chemical to pH chamber..")
-        vol = overpump * (fluid_vol + self.getTubeVol(tube_length)) #ml
+        logging.info(f"Pumping {self.pH_volume}ml of chemical to pH chamber..")
+        vol = overpump * (self.pH_volume + self.getTubeVol(tube_length)) #ml
         
         if self.sim is False:
             self.ser.write(f"sendToPH({vol})".encode())
