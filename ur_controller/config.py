@@ -1,0 +1,72 @@
+from utils import make_tf
+
+UR5E_BASE_POS = [
+    0.12461489508,
+    -0.37552305576,
+    0.02319497587,
+]  # from hand to table calibration
+
+UR5E_BASE_QUAT = [
+    0.923987307,
+    -0.382421349,
+    0.000264816757,
+    -0.00113897542,
+]
+
+UR5E_BASE_ROT = [
+    [7.07507683e-01, -7.06704343e-01, 1.36051168e-03],
+    [7.06705549e-01, 7.07505229e-01, -1.90225450e-03],
+    [3.81762390e-04, 2.30734082e-03, 9.99997265e-01],
+]
+
+S1_POS = [0.3969, -0.4958, 0.2317]
+S1_ROT = [
+    [-0.09127, -0.995, -0.03997],
+    [-0.9829, 0.09646, -0.1571],
+    [0.1602, 0.02494, -0.9868],
+]
+
+# S1_W_POS = [0.7518, -0.4352, 0.2451]
+# S1_W_ROT = [
+#     [-0.04072, -0.9909, 0.1283],
+#     [-0.9645, 0.005463, -0.264],
+#     [0.2609, -0.1345, -0.9559],
+# ]
+
+S1_W_POS = [0.75, -0.4511, 0.2455]
+S1_W_ROT = [
+    [0.002982, 0.99, 0.1409],
+    [0.9897, 0.01721, -0.1419],
+    [-0.1429, 0.1398, -0.9798],
+]
+S2_W_POS = [0.8119, -0.4512, 0.2431]
+S2_W_ROT = [
+    [0.2714,    0.9395,   -0.2089],
+    [0.9447,   -0.3016,   -0.129 ],
+    [ -0.1842,   -0.1624,   -0.9694 ],
+]
+
+T_W_DEFAULT_R = [
+    [0.04099 ,  0.9992,   -0.001371],
+    [0.9992,  -0.04099,   0.001877],
+    [0.001819, -0.001447, -1],
+]
+T_W_DEFAULT_POS = [0.750, -0.225, 0.275]
+
+# Make SE3
+T_W_BASE = make_tf(pos=UR5E_BASE_POS, ori=UR5E_BASE_ROT)
+T_W_DEFAULT = make_tf(T_W_DEFAULT_POS, T_W_DEFAULT_R)
+T_BASE_S1 = make_tf(S1_POS, S1_ROT)
+T_W_S1 = make_tf(S1_W_POS, S1_W_ROT)
+T_W_S2= make_tf(S2_W_POS, S2_W_ROT)
+
+# Gripper Setting
+ROBOTIQ_PORT = 63352
+ROBOT_IP = "192.168.1.125"
+_MAX_GRIPPER_FORCE = 255
+_MAX_GRIPPER_SPEED = 255
+_MAX_GRIPPER_POS = 255
+
+_DEFAULT_GRIPPER_SPEED = int(_MAX_GRIPPER_SPEED * 0.02)
+_DEFAULT_GRIPPER_FORCE = int(_MAX_GRIPPER_FORCE * 0.02)
+_DEFAULT_GRIPPER_POS = int(_MAX_GRIPPER_FORCE * 0.02)
