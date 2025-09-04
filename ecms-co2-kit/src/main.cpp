@@ -41,12 +41,11 @@ const float STEPS_REV = 200.0;
 const float MICROSTEPS = 4.0;
 const float GEAR_RATIO = 1.0;
 
-const float PUMP_SPEED = 600.0 * MICROSTEPS * GEAR_RATIO; //microsteps/s
-const float ECMS_SPEED = 300.0 * MICROSTEPS * GEAR_RATIO; //microsteps/s
+
 const float MAX_ACCEL = 200.0 * MICROSTEPS * GEAR_RATIO; //microsteps/s2
 
 // For Pump stepper motor
-const float ML_REV = 0.0855; //ml/revs
+const float ML_REV = 0.094; //ml/revs
 
 float voltage;
 float phValue; 
@@ -69,6 +68,7 @@ String action;
 
 unsigned long duration;
 float volume = 0;
+float speed;
 
 // put function declarations here:
 void relayOn();
@@ -85,6 +85,9 @@ void sendToPH(float vol);
 void addWater(float vol);
 void transferToECMS(float vol);
 float getPH();
+
+const float PUMP_SPEED = volToSteps(0.3); // ml/s
+const float ECMS_SPEED = volToSteps(0.01); // ml/s
 
 void setup() {
   // put your setup code here, to run once:
@@ -181,8 +184,10 @@ void loop() {
             addWater(volume);
         }
         else if (action == "transferToECMS") {
-            volume = Serial.readStringUntil(')').toFloat();
-            
+            volume = Serial.readStringUntil(',').toFloat();
+            speed = Serial.readStringUntil(')').toFloat();
+
+            PUMP_3.setMaxSpeed(volToSteps(speed));
             transferToECMS(volume);
         }
         else if (action == "getPH") {
