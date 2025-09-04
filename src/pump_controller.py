@@ -42,19 +42,28 @@ class ECMSController:
             self.ser.stopbits = 1
             self.ser.timeout = self.timeout
 
-            # Windows compatibilty
-            self.ser.rtscts = False
+            # Windows compatibilty (disable flow control)
+            self.ser.rtscts=False
+            self.ser.dsrdtr=False
+            self.ser.xonxoff=False
 
             logging.info("Attempting to open EC-MS controller serial port..")
 
             if self.ser.isOpen() is False:
                 self.ser.open()
 
-            # Give time for controller to wake up
-            time.sleep(2)
+            self.ser.setDTR(False)  # IO0 stays high
+            self.ser.setRTS(False)  # EN stays high
 
             # Check connection (blocking)
             self.check_response()
+
+    @skip_if_sim()
+    def reset_esp(self) -> None:
+        # Simple reset: pull EN low then high
+        self.ser.setRTS(True)
+        time.sleep(0.2)
+        self.ser.setRTS(False)
 
     @skip_if_sim(default_return="0")
     def get_data(self) -> str:
