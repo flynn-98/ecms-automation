@@ -25,10 +25,14 @@ class ECMSController:
         self.pH_sample_time = 20 #s
         self.pH_sample_size = 10
 
-        self.pH_volume = 15 #ml
+        self.pH_volume = 5 #ml
 
-        self.waste_time = 20 #s
-        self.refresh_time = 10 #s
+        self.waste_time = 10 #s
+        self.refresh_time = 4 #s
+
+        self.chemical_to_mixture = 700 #mm
+        self.water_to_mixture = 720 #mm
+        self.mixture_to_ph = 200 #mm
 
         if self.sim:
             logging.info("Simulated connection to EC-MS controller established.")
@@ -115,7 +119,7 @@ class ECMSController:
         
     @skip_if_sim()
     def releaseCO2(self, duration: float = 0) -> None:
-        logging.info(f"Opening CO2 valve for {duration}mins..")
+        logging.info(f"Opening CO2 valve for {duration}s..")
         
         self.ser.write(f"releaseCO2({duration})".encode())
         self.check_response()
@@ -142,6 +146,10 @@ class ECMSController:
     @skip_if_sim()
     def sendToPH(self, tube_length: float = 0, overpump: float = 1.0) -> None:
         logging.info(f"Pumping {self.pH_volume}ml of chemical to pH chamber..")
+
+        if tube_length == 0:
+            tube_length = self.mixture_to_ph
+
         vol = overpump * (self.pH_volume + self.getTubeVol(tube_length)) #ml
         
         self.ser.write(f"sendToPh({vol})".encode())
@@ -151,6 +159,10 @@ class ECMSController:
     def addChemical(self, fluid_vol: float = 0, tube_length: float = 0, overpump: float = 1.0) -> None:
         # Fluid volume in uL -> sent volume in mL
         logging.info(f"Pumping {fluid_vol}ml of chemical to mixing pot..")
+
+        if tube_length == 0:
+            tube_length = self.chemical_to_mixture
+
         vol = overpump * (fluid_vol + self.getTubeVol(tube_length)) #ml
         
         self.ser.write(f"addChemical({vol})".encode())
@@ -160,18 +172,33 @@ class ECMSController:
     def addWater(self, fluid_vol: float = 0, tube_length: float = 0, overpump: float = 1.0) -> None:
         # Fluid volume in uL -> sent volume in mL
         logging.info(f"Pumping {fluid_vol}ml of water to mixing pot..")
+
+        if tube_length == 0:
+            tube_length = self.water_to_mixture
+
         vol = overpump * (fluid_vol + self.getTubeVol(tube_length)) #ml
  
         self.ser.write(f"addWater({vol})".encode())
         self.check_response()
 
+    def prime(self) -> None:
+        logging.info("Depriming lines..")
+        self.addChemical(overpump=1.2)
+        self.addWater(overpump=1.2)
+        self.sendToPH()
+
+    def deprime(self) -> None:
+        logging.info("Depriming lines..")
+        self.addChemical(tube_length=-self.chemical_to_mixture, overpump=1.2)
+        self.addWater(tube_length=-self.water_to_mixture, overpump=1.2)
+
     @skip_if_sim()
-    def transferToECMS(self, fluid_vol: float, tube_length: float = 500.0, overpump: float = 1.2, speed: float = 0.01) -> None:
+    def transferToECMS(self, fluid_vol: float = 0, tube_length: float = 0, flow_rate: float = 0.01, overpump: float = 1.0) -> None:
         # Fluid volume in uL -> sent volume in mL
         logging.info(f"Pumping {fluid_vol}ml of saturated mixture to EC-MS..")
         vol = overpump * (fluid_vol + self.getTubeVol(tube_length)) #ml
         
-        self.ser.write(f"transferToECMS({vol},{speed})".encode())
+        self.ser.write(f"transferToECMS({vol},{flow_rate})".encode())
         self.check_response()
 
     @skip_if_sim(default_return=7.0)
